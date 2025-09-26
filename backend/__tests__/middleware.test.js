@@ -31,7 +31,7 @@ jest.mock('../middleware/authMiddleware.js', () => {
   };
 });
 
-import User from '../models/User.js';
+// User model is mocked above, no need to import
 
 describe('Auth Middleware', () => {
   let req, res, next;
