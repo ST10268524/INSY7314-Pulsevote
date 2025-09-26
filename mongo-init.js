@@ -1,7 +1,7 @@
 // MongoDB initialization script
 db = db.getSiblingDB('pulsevote');
 
-// Create collections with validation
+// Create collections with validations
 db.createCollection('users', {
   validator: {
     $jsonSchema: {

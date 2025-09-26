@@ -1,16 +1,16 @@
 /**
  * Authentication Routes
- * 
+ *
  * Handles user authentication endpoints including registration, login,
  * profile management, and logout functionality.
- * 
+ *
  * Features:
  * - User registration with validation
  * - Secure login with account locking
  * - JWT token generation
  * - Profile management
  * - Security logging
- * 
+ *
  * @author PulseVote Team
  * @version 1.0.0
  */
@@ -72,40 +72,40 @@ const generateToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expires
  */
 router.post('/register', async (req, res) => {
   const { username, password, email } = req.body;
-  
+
   // Input validation
   if (!username || !password || !email) {
     return res.status(400).json({ message: 'Username, password, and email are required' });
   }
-  
+
   if (password.length < 6) {
     return res.status(400).json({ message: 'Password must be at least 6 characters' });
   }
-  
+
   try {
     // Check if user already exists
     const userExists = await User.findOne({ $or: [{ username }, { email }] });
     if (userExists) {
-      return res.status(400).json({ 
-        message: userExists.username === username ? 'Username already exists' : 'Email already exists' 
+      return res.status(400).json({
+        message: userExists.username === username ? 'Username already exists' : 'Email already exists'
       });
     }
-    
+
     // Create new user
     const user = await User.create({ username, password, email });
     user.lastLogin = new Date();
     await user.save();
-    
+
     // Log successful registration
     appLogger.userRegistered(user._id, user.username);
-    
+
     // Return user data with JWT token
-    res.status(201).json({ 
-      _id: user._id, 
-      username: user.username, 
+    res.status(201).json({
+      _id: user._id,
+      username: user.username,
       email: user.email,
       role: user.role,
-      token: generateToken(user._id) 
+      token: generateToken(user._id)
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -150,58 +150,58 @@ router.post('/register', async (req, res) => {
  */
 router.post('/login', async (req, res) => {
   const { username, password } = req.body;
-  
+
   // Input validation
   if (!username || !password) {
     return res.status(400).json({ message: 'Username and password are required' });
   }
-  
+
   try {
     // Find user by username
     const user = await User.findOne({ username });
-    
+
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
-    
+
     // Check if account is active
     if (!user.isActive) {
       return res.status(401).json({ message: 'Account is deactivated' });
     }
-    
+
     // Check if account is locked
     if (user.isLocked) {
       return res.status(423).json({ message: 'Account is temporarily locked due to too many failed attempts' });
     }
-    
+
     // Verify password
     const isMatch = await user.matchPassword(password);
-    
+
     if (isMatch) {
       // Reset login attempts on successful login
       user.loginAttempts = 0;
       user.lockUntil = undefined;
       user.lastLogin = new Date();
       await user.save();
-      
+
       // Log successful login
       securityLogger.loginAttempt(username, true, req.ip);
-      
+
       // Return user data with JWT token
-      res.json({ 
-        _id: user._id, 
-        username: user.username, 
+      res.json({
+        _id: user._id,
+        username: user.username,
         email: user.email,
         role: user.role,
-        token: generateToken(user._id) 
+        token: generateToken(user._id)
       });
     } else {
       // Increment login attempts for failed login
       await user.incrementLoginAttempts();
-      
+
       // Log failed login attempt
       securityLogger.loginAttempt(username, false, req.ip);
-      
+
       res.status(401).json({ message: 'Invalid credentials' });
     }
   } catch (err) {

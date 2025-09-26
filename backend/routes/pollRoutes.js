@@ -1,15 +1,15 @@
 /**
  * Poll Routes
- * 
+ *
  * Handles poll-related endpoints including creating, listing, and voting on polls.
  * Provides CRUD operations for poll management with proper authentication.
- * 
+ *
  * Features:
  * - List all polls with creator information
  * - Create new polls (authenticated users only)
  * - Vote on poll options
  * - Input validation and error handling
- * 
+ *
  * @author PulseVote Team
  * @version 1.0.0
  */
@@ -85,7 +85,7 @@ router.get('/', async (req, res) => {
  */
 router.post('/', protect, async (req, res) => {
   const { question, options } = req.body;
-  
+
   try {
     // Create new poll with options
     const poll = await Poll.create({
@@ -93,7 +93,7 @@ router.post('/', protect, async (req, res) => {
       options: options.map(opt => ({ text: opt })),
       createdBy: req.user._id
     });
-    
+
     res.json(poll);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -141,26 +141,26 @@ router.post('/', protect, async (req, res) => {
  */
 router.post('/:id/vote', async (req, res) => {
   const { optionIndex } = req.body;
-  
+
   try {
     // Find poll by ID
     const poll = await Poll.findById(req.params.id);
-    
+
     if (!poll) {
       return res.status(404).json({ message: 'Poll not found' });
     }
-    
+
     // Validate option index
-    if (typeof optionIndex !== 'number' || 
-        optionIndex < 0 || 
+    if (typeof optionIndex !== 'number' ||
+        optionIndex < 0 ||
         optionIndex >= poll.options.length) {
       return res.status(400).json({ message: 'Invalid option index' });
     }
-    
+
     // Increment vote count for selected option
     poll.options[optionIndex].votes += 1;
     await poll.save();
-    
+
     res.json(poll);
   } catch (err) {
     res.status(500).json({ message: err.message });

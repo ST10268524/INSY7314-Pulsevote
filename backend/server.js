@@ -1,10 +1,10 @@
 /**
  * PulseVote Backend Server
- * 
+ *
  * This is the main entry point for the PulseVote backend API server.
  * It sets up Express.js with security middleware, database connection,
  * authentication, and API routes for the polling application.
- * 
+ *
  * Features:
  * - JWT-based authentication
  * - Rate limiting and security headers
@@ -12,30 +12,30 @@
  * - Swagger API documentation
  * - Comprehensive logging
  * - HTTPS support for production
- * 
+ *
  * @author PulseVote Team
  * @version 1.0.0
  */
 
 // Core Express and Node.js imports
-import express from "express";
-import https from "https";
-import fs from "fs";
-import dotenv from "dotenv";
+import express from 'express';
+import https from 'https';
+import fs from 'fs';
+import dotenv from 'dotenv';
 
 // Security and middleware imports
-import helmet from "helmet";
-import cors from "cors";
-import morgan from "morgan";
-import compression from "compression";
-import rateLimit from "express-rate-limit";
+import helmet from 'helmet';
+import cors from 'cors';
+import morgan from 'morgan';
+import compression from 'compression';
+import rateLimit from 'express-rate-limit';
 
 // Application-specific imports
-import connectDB from "./config/db.js";
-import authRoutes from "./routes/authRoutes.js";
-import pollRoutes from "./routes/pollRoutes.js";
-import setupSwagger from "./config/swagger.js";
-import logger, { morganStream, requestLogger } from "./config/logger.js";
+import connectDB from './config/db.js';
+import authRoutes from './routes/authRoutes.js';
+import pollRoutes from './routes/pollRoutes.js';
+import setupSwagger from './config/swagger.js';
+import logger, { morganStream, requestLogger } from './config/logger.js';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -59,29 +59,29 @@ app.use(helmet());
 // Content Security Policy configuration
 app.use(helmet.contentSecurityPolicy({
   directives: {
-    defaultSrc: ["'self'"],
-    scriptSrc: ["'self'", "'unsafe-inline'", "https://apis.google.com"],
-    styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-    fontSrc: ["'self'", "https://fonts.gstatic.com"],
-    imgSrc: ["'self'", "data:", "https:"],
-    connectSrc: ["'self'", process.env.CLIENT_URL || "http://localhost:5173"],
-    frameSrc: ["'none'"],
-    objectSrc: ["'none'"],
-    baseUri: ["'self'"],
-    formAction: ["'self'"],
-    frameAncestors: ["'none'"],
+    defaultSrc: ['\'self\''],
+    scriptSrc: ['\'self\'', '\'unsafe-inline\'', 'https://apis.google.com'],
+    styleSrc: ['\'self\'', '\'unsafe-inline\'', 'https://fonts.googleapis.com'],
+    fontSrc: ['\'self\'', 'https://fonts.gstatic.com'],
+    imgSrc: ['\'self\'', 'data:', 'https:'],
+    connectSrc: ['\'self\'', process.env.CLIENT_URL || 'http://localhost:5173'],
+    frameSrc: ['\'none\''],
+    objectSrc: ['\'none\''],
+    baseUri: ['\'self\''],
+    formAction: ['\'self\''],
+    frameAncestors: ['\'none\''],
     upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : undefined
   }
 }));
 
 // CORS configuration - allow requests from frontend
-app.use(cors({ 
-  origin: process.env.CLIENT_URL || "http://localhost:5173", 
-  credentials: true 
+app.use(cors({
+  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  credentials: true
 }));
 
 // HTTP request logging using Morgan
-app.use(morgan("combined", { stream: morganStream }));
+app.use(morgan('combined', { stream: morganStream }));
 
 // Custom request logging middleware
 app.use(requestLogger);
@@ -93,7 +93,7 @@ app.use(compression());
 // ============================================================================
 
 // General rate limiting for all routes
-app.use(rateLimit({ 
+app.use(rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
   message: 'Too many requests from this IP, please try again later.',
@@ -134,7 +134,7 @@ app.get('/', (req, res) => res.send('PulseVote backend API running securely ✅'
 // ============================================================================
 
 // Global error handler middleware
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
   // Log error details for debugging
   logger.error('Unhandled error', {
     error: err.message,
@@ -144,7 +144,7 @@ app.use((err, req, res, next) => {
     ip: req.ip,
     userAgent: req.get('User-Agent')
   });
-  
+
   // Return generic error message to client
   res.status(500).json({ message: 'Server Error' });
 });
@@ -168,15 +168,15 @@ app.listen(PORT, () => {
 });
 
 // Start HTTPS server if certificates exist (production only)
-if (process.env.NODE_ENV === 'production' && 
-    fs.existsSync('./certs/server.crt') && 
+if (process.env.NODE_ENV === 'production' &&
+    fs.existsSync('./certs/server.crt') &&
     fs.existsSync('./certs/server.key')) {
-  
+
   const httpsOptions = {
     cert: fs.readFileSync('./certs/server.crt'),
     key: fs.readFileSync('./certs/server.key')
   };
-  
+
   https.createServer(httpsOptions, app).listen(HTTPS_PORT, () => {
     logger.info(`HTTPS Server started on port ${HTTPS_PORT}`, {
       type: 'server',

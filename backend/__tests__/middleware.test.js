@@ -56,7 +56,7 @@ describe('Auth Middleware', () => {
     it('should call next() if token is valid and user exists', async () => {
       const token = jwt.sign({ id: mockUser._id }, process.env.JWT_SECRET || 'test-secret');
       req.headers.authorization = `Bearer ${token}`;
-      
+
       User.findById.mockResolvedValue(mockUser);
 
       await protect(req, res, next);
@@ -68,7 +68,7 @@ describe('Auth Middleware', () => {
     it('should return 401 if user not found', async () => {
       const token = jwt.sign({ id: 'nonexistent' }, process.env.JWT_SECRET || 'test-secret');
       req.headers.authorization = `Bearer ${token}`;
-      
+
       User.findById.mockResolvedValue(null);
 
       await protect(req, res, next);

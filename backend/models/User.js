@@ -1,19 +1,19 @@
 /**
  * User Model
- * 
+ *
  * Defines the User schema for MongoDB with authentication and security features.
  * Includes password hashing, account locking, and role-based access control.
- * 
+ *
  * @author PulseVote Team
  * @version 1.0.0
  */
 
-import mongoose from "mongoose";
-import bcrypt from "bcrypt";
+import mongoose from 'mongoose';
+import bcrypt from 'bcrypt';
 
 /**
  * User Schema Definition
- * 
+ *
  * Fields:
  * - username: Unique username (3-30 characters)
  * - password: Hashed password (minimum 6 characters)
@@ -26,51 +26,51 @@ import bcrypt from "bcrypt";
  * - createdAt/updatedAt: Timestamps
  */
 const userSchema = new mongoose.Schema({
-  username: { 
-    type: String, 
-    required: true, 
-    unique: true, 
-    trim: true, 
-    minlength: 3, 
-    maxlength: 30 
+  username: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true,
+    minlength: 3,
+    maxlength: 30
   },
-  password: { 
-    type: String, 
-    required: true, 
-    minlength: 6 
+  password: {
+    type: String,
+    required: true,
+    minlength: 6
   },
-  email: { 
-    type: String, 
-    required: true, 
-    unique: true, 
-    lowercase: true 
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+    lowercase: true
   },
-  role: { 
-    type: String, 
-    enum: ['user', 'admin', 'moderator'], 
-    default: 'user' 
+  role: {
+    type: String,
+    enum: ['user', 'admin', 'moderator'],
+    default: 'user'
   },
-  isActive: { 
-    type: Boolean, 
-    default: true 
+  isActive: {
+    type: Boolean,
+    default: true
   },
-  lastLogin: { 
-    type: Date 
+  lastLogin: {
+    type: Date
   },
-  loginAttempts: { 
-    type: Number, 
-    default: 0 
+  loginAttempts: {
+    type: Number,
+    default: 0
   },
-  lockUntil: { 
-    type: Date 
+  lockUntil: {
+    type: Date
   },
-  createdAt: { 
-    type: Date, 
-    default: Date.now 
+  createdAt: {
+    type: Date,
+    default: Date.now
   },
-  updatedAt: { 
-    type: Date, 
-    default: Date.now 
+  updatedAt: {
+    type: Date,
+    default: Date.now
   }
 });
 
@@ -114,14 +114,14 @@ userSchema.methods.incrementLoginAttempts = function() {
       $set: { loginAttempts: 1 }
     });
   }
-  
+
   const updates = { $inc: { loginAttempts: 1 } };
-  
+
   // Lock account after 5 failed attempts for 2 hours
   if (this.loginAttempts + 1 >= 5 && !this.isLocked) {
     updates.$set = { lockUntil: Date.now() + 2 * 60 * 60 * 1000 }; // 2 hours
   }
-  
+
   return this.updateOne(updates);
 };
 

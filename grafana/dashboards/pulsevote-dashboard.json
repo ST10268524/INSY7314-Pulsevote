@@ -1,7 +1,7 @@
 {
   "dashboard": {
     "id": null,
-    "title": "PulseVote Application Dashboard",
+    "title": "PulseVote Dashboard", 
     "tags": ["pulsevote", "application"],
     "style": "dark",
     "timezone": "browser",
