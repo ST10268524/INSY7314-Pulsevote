@@ -1,24 +1,62 @@
+/**
+ * PulseVote Backend Server
+ * 
+ * This is the main entry point for the PulseVote backend API server.
+ * It sets up Express.js with security middleware, database connection,
+ * authentication, and API routes for the polling application.
+ * 
+ * Features:
+ * - JWT-based authentication
+ * - Rate limiting and security headers
+ * - MongoDB database connection
+ * - Swagger API documentation
+ * - Comprehensive logging
+ * - HTTPS support for production
+ * 
+ * @author PulseVote Team
+ * @version 1.0.0
+ */
+
+// Core Express and Node.js imports
 import express from "express";
 import https from "https";
 import fs from "fs";
 import dotenv from "dotenv";
+
+// Security and middleware imports
 import helmet from "helmet";
 import cors from "cors";
 import morgan from "morgan";
 import compression from "compression";
 import rateLimit from "express-rate-limit";
+
+// Application-specific imports
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 import pollRoutes from "./routes/pollRoutes.js";
 import setupSwagger from "./config/swagger.js";
 import logger, { morganStream, requestLogger } from "./config/logger.js";
 
+// Load environment variables from .env file
 dotenv.config();
+
+// Initialize Express application
 const app = express();
+
+// Connect to MongoDB database
 connectDB();
 
+// ============================================================================
+// MIDDLEWARE CONFIGURATION
+// ============================================================================
+
+// Parse JSON request bodies
 app.use(express.json());
+
+// Security headers using Helmet
 app.use(helmet());
+
+// Content Security Policy configuration
 app.use(helmet.contentSecurityPolicy({
   directives: {
     defaultSrc: ["'self'"],
@@ -35,11 +73,26 @@ app.use(helmet.contentSecurityPolicy({
     upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : undefined
   }
 }));
-app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:5173", credentials: true }));
+
+// CORS configuration - allow requests from frontend
+app.use(cors({ 
+  origin: process.env.CLIENT_URL || "http://localhost:5173", 
+  credentials: true 
+}));
+
+// HTTP request logging using Morgan
 app.use(morgan("combined", { stream: morganStream }));
+
+// Custom request logging middleware
 app.use(requestLogger);
+
+// Enable gzip compression for responses
 app.use(compression());
-// General rate limiting
+// ============================================================================
+// RATE LIMITING CONFIGURATION
+// ============================================================================
+
+// General rate limiting for all routes
 app.use(rateLimit({ 
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each IP to 100 requests per windowMs
@@ -48,7 +101,7 @@ app.use(rateLimit({
   legacyHeaders: false
 }));
 
-// Stricter rate limiting for auth routes
+// Stricter rate limiting for authentication routes to prevent brute force attacks
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5, // limit each IP to 5 requests per windowMs
@@ -57,18 +110,32 @@ const authLimiter = rateLimit({
   legacyHeaders: false
 });
 
-// Apply auth rate limiting to auth routes
+// Apply auth rate limiting to authentication routes
 app.use('/api/auth', authLimiter);
 
-// Routes
+// ============================================================================
+// API ROUTES
+// ============================================================================
+
+// Authentication routes (login, register, profile)
 app.use('/api/auth', authRoutes);
+
+// Poll management routes (create, vote, list polls)
 app.use('/api/polls', pollRoutes);
+
+// Setup Swagger API documentation
 setupSwagger(app);
 
+// Health check endpoint
 app.get('/', (req, res) => res.send('PulseVote backend API running securely ✅'));
 
-// Error handler
+// ============================================================================
+// ERROR HANDLING
+// ============================================================================
+
+// Global error handler middleware
 app.use((err, req, res, next) => {
+  // Log error details for debugging
   logger.error('Unhandled error', {
     error: err.message,
     stack: err.stack,
@@ -78,9 +145,15 @@ app.use((err, req, res, next) => {
     userAgent: req.get('User-Agent')
   });
   
+  // Return generic error message to client
   res.status(500).json({ message: 'Server Error' });
 });
 
+// ============================================================================
+// SERVER STARTUP
+// ============================================================================
+
+// Define server ports
 const PORT = process.env.PORT || 5000;
 const HTTPS_PORT = process.env.HTTPS_PORT || 5443;
 
@@ -94,8 +167,11 @@ app.listen(PORT, () => {
   });
 });
 
-// Start HTTPS server if certificates exist
-if (process.env.NODE_ENV === 'production' && fs.existsSync('./certs/server.crt') && fs.existsSync('./certs/server.key')) {
+// Start HTTPS server if certificates exist (production only)
+if (process.env.NODE_ENV === 'production' && 
+    fs.existsSync('./certs/server.crt') && 
+    fs.existsSync('./certs/server.key')) {
+  
   const httpsOptions = {
     cert: fs.readFileSync('./certs/server.crt'),
     key: fs.readFileSync('./certs/server.key')
