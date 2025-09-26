@@ -1,7 +1,7 @@
 # PulseVote
 
 PulseVote is a full-stack polling application built using the MERN stack (MongoDB, Express, React, Node.js).  
-It was scaffolded as part of ICE Tasks 1–4 and includes user authentication, poll management, and Docker support.
+It was scaffolded as part of ICE Tasks 3 and 4 and includes user authentication, poll management, and Docker support.
 
 ---
 
